@@ -126,6 +126,8 @@ The detailed plan for making this happen is in [AgAu_UNBANK](https://github.com/
 
 | Resource | Link |
 |----------|------|
+| **Smart Contract** | [AgAuSale.sol](./contracts/AgAuSale.sol) |
+| **Whitepaper** | [WHITEPAPER.md](./WHITEPAPER.md) |
 | **Execution Plan** | [AgAu_UNBANK](https://github.com/Arturito7ei/AgAu_UNBANK) |
 | **7EiBank White Paper** | [7EiBank](https://github.com/Arturito7ei/7EiBank) |
 | **7Ei Website** | [7ei.ai](https://7ei.ai) |
