@@ -7,7 +7,8 @@ pragma solidity ^0.8.20;
  * Rules:
  *   1. Anyone can contribute ETH before the deadline.
  *   2. If the target is reached, the guardian releases funds to the SAFE
- *      and contributors can claim tokens proportional to their contribution.
+ *      and contributors claim AgAu DAO tokens proportional to their contribution
+ *      from a fixed supply of 777,000,000 AGAU.
  *   3. If the deadline passes without success, contributors withdraw their ETH.
  *
  * No admin can touch contributor funds unless the target is met.
@@ -19,13 +20,13 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 // ──────────────────────────────────────────────
-//  The Token: ₳gAu Share
+//  The Token: AgAu DAO
 // ──────────────────────────────────────────────
 
-contract AgAuShare is ERC20 {
+contract AgAuDAO is ERC20 {
     address public immutable sale;
 
-    constructor() ERC20("AgAu Share", "AGAU") {
+    constructor() ERC20("AgAu DAO", "AGAU") {
         sale = msg.sender;
     }
 
@@ -41,13 +42,17 @@ contract AgAuShare is ERC20 {
 
 contract AgAuSale is ReentrancyGuard {
 
+    // ── Constants ──
+
+    uint256 public constant TOTAL_SUPPLY = 777_000_000 * 1e18; // 777 million AGAU
+
     // ── State ──
 
     address public immutable guardian;    // the SAFE multisig
     uint256 public immutable deadline;    // November 5, 2026 00:00 UTC
     uint256 public immutable target;      // ETH target amount (wei)
 
-    AgAuShare public immutable token;
+    AgAuDAO public immutable token;
 
     uint256 public totalContributed;
     mapping(address => uint256) public contributions;
@@ -78,7 +83,7 @@ contract AgAuSale is ReentrancyGuard {
         guardian = _guardian;
         target = _target;
         deadline = _deadline;
-        token = new AgAuShare();
+        token = new AgAuDAO();
     }
 
     // ── Contribute ──
@@ -135,12 +140,13 @@ contract AgAuSale is ReentrancyGuard {
     }
 
     /**
-     * After success, each contributor claims tokens proportional to their
-     * contribution. The total token supply equals the total ETH contributed
-     * (in wei), so 1 wei contributed = 1 token unit.
+     * After success, each contributor claims AgAu DAO tokens proportional
+     * to their contribution from the fixed supply of 777 million AGAU.
      *
-     * A contributor who put in 10% of the total receives 10% of the tokens.
-     * This is a mathematical fact, not a policy decision.
+     *   tokens = (contribution / totalContributed) × 777,000,000
+     *
+     * A contributor who put in 10% of the total receives 77,700,000 AGAU.
+     * This is arithmetic, not policy.
      */
     function claimTokens() external nonReentrant {
         require(succeeded, "not succeeded");
@@ -148,9 +154,10 @@ contract AgAuSale is ReentrancyGuard {
         require(amount > 0, "nothing to claim");
 
         contributions[msg.sender] = 0;
-        token.mint(msg.sender, amount);
+        uint256 tokens = (amount * TOTAL_SUPPLY) / totalContributed;
+        token.mint(msg.sender, tokens);
 
-        emit TokensClaimed(msg.sender, amount);
+        emit TokensClaimed(msg.sender, tokens);
     }
 
     // ── Refund Path ──
@@ -182,5 +189,10 @@ contract AgAuSale is ReentrancyGuard {
 
     function contributionOf(address a) external view returns (uint256) {
         return contributions[a];
+    }
+
+    function tokensClaimable(address a) external view returns (uint256) {
+        if (!succeeded || totalContributed == 0) return 0;
+        return (contributions[a] * TOTAL_SUPPLY) / totalContributed;
     }
 }
